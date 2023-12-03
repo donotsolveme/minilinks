@@ -33,7 +33,7 @@ def get_api_key(api_key_header: str = Security(api_key_header)) -> str:
 
 
 def add_http(url: str) -> str:
-    if re.match(url, r"^\w+:\/\/") is None:
+    if re.match(r"^\w+:\/\/", url) is None:
         return "http://" + url
     return url
 
