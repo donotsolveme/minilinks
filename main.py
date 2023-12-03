@@ -31,10 +31,12 @@ def get_api_key(api_key_header: str = Security(api_key_header)) -> str:
         status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or missing API key."
     )
 
-def add_http(url: str) -> str: 
+
+def add_http(url: str) -> str:
     if re.match(url, r"^\w+:\/\/") is None:
         return "http://" + url
     return url
+
 
 @app.get("/{id}")
 def redirect(id: str, response: Response):
@@ -140,7 +142,4 @@ def delete(id: str, api_key: str = Security(get_api_key)):
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        app,
-        port=8000,
-    )
+    uvicorn.run(app, port=config.PORT)
