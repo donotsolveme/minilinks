@@ -39,9 +39,31 @@ def add_http(url: str) -> str:
 
 
 @app.get("/{id}")
-def redirect(id: str, response: Response):
+def redirect(id: str, response: Response, request: Request):
+    if id.endswith("+"):
+        id = id[:-1]
+        print(id)
+        with sqlite3.connect("minilinks.db") as db:
+            cur = db.execute("SELECT * FROM links WHERE id = ?", (id,))
+            try:
+                link = cur.fetchone()
+            except TypeError:
+                response.status_code = status.HTTP_404_NOT_FOUND
+                return "Link not found"
+
+        resp = {
+            "id": link[0],
+            "url": f"{request.base_url}{id}",
+            "orig_url": link[1],
+            "note": link[2],
+            "created_at": link[3],
+            "updated_at": link[4],
+            "clicks": link[5],
+        }
+        return resp
+
     with sqlite3.connect("minilinks.db") as db:
-        cur = db.execute("SELECT url FROM links WHERE id=?", (id,))
+        cur = db.execute("SELECT url FROM links WHERE id = ?", (id,))
         try:
             url = cur.fetchone()[0]
         except TypeError:
@@ -50,6 +72,11 @@ def redirect(id: str, response: Response):
         db.execute("UPDATE links SET clicks = clicks + 1 WHERE id = ?", (id,))
         db.commit()
     return RedirectResponse(url, status_code=status.HTTP_301_MOVED_PERMANENTLY)
+
+
+@app.get("/{id}%2B")
+def get_detail(id: str, response: Response):
+    return "oh hi"
 
 
 @app.post("/api")
