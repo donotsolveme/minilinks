@@ -15,7 +15,7 @@ app = FastAPI()
 # db init
 db = sqlite3.connect("minilinks.db")
 db.execute(
-    "CREATE TABLE IF NOT EXISTS links(id TEXT UNIQUE, url TEXT, note TEXT, created_at INTEGER, updated_at INTEGER)"
+    "CREATE TABLE IF NOT EXISTS links(id TEXT UNIQUE, url TEXT, note TEXT, created_at INTEGER, updated_at INTEGER, clicks INTEGER)"
 )
 db.close()
 
@@ -47,7 +47,9 @@ def redirect(id: str, response: Response):
         except TypeError:
             response.status_code = status.HTTP_404_NOT_FOUND
             return "Link not found."
-        return RedirectResponse(url, status_code=status.HTTP_301_MOVED_PERMANENTLY)
+        db.execute("UPDATE links SET clicks = clicks + 1 WHERE id = ?", (id,))
+        db.commit()
+    return RedirectResponse(url, status_code=status.HTTP_301_MOVED_PERMANENTLY)
 
 
 @app.post("/api")
@@ -59,17 +61,23 @@ def add(
     api_key: str = Security(get_api_key),
 ):
     url = add_http(url)
+    if re.match(r"^https?:\/\/[a-zA-Z1-9-._~]+$", id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID contains illegal characters.",
+        )
     with sqlite3.connect("minilinks.db") as db:
         now = int(time())
         try:
             db.execute(
-                "INSERT INTO links VALUES(?, ?, ?, ?, ?)",
+                "INSERT INTO links VALUES(?, ?, ?, ?, ?, ?)",
                 (
                     id,
                     url,
                     note,
                     now,  # created_at
                     now,  # updated_at
+                    0,  # clicks
                 ),
             )
         except sqlite3.IntegrityError:
@@ -84,6 +92,7 @@ def add(
         "note": note,
         "created_at": now,
         "updated_at": now,
+        "clicks": 0,
     }
     return resp
 
@@ -120,6 +129,7 @@ def update(
         "note": after[2],
         "created_at": after[3],
         "updated_at": after[4],
+        "clicks": after[5],
     }
     return resp
 
