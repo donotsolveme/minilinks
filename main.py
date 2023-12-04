@@ -61,7 +61,7 @@ def add(
     api_key: str = Security(get_api_key),
 ):
     url = add_http(url)
-    if re.match(r"^https?:\/\/[a-zA-Z1-9-._~]+$", id) is None:
+    if re.match(r"^[a-zA-Z1-9-._~]+$", id) is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="ID contains illegal characters.",
