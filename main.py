@@ -47,6 +47,7 @@ def redirect(id: str, response: Response, request: Request):
             cur = db.execute("SELECT * FROM links WHERE id = ?", (id,))
             try:
                 link = cur.fetchone()
+                link[0] # 多分もっといい方法ある
             except TypeError:
                 response.status_code = status.HTTP_404_NOT_FOUND
                 return "Link not found"
