@@ -45,10 +45,9 @@ def redirect(id: str, response: Response, request: Request):
         print(id)
         with sqlite3.connect("minilinks.db") as db:
             cur = db.execute("SELECT * FROM links WHERE id = ?", (id,))
-            try:
-                link = cur.fetchone()
-                link[0] # 多分もっといい方法ある
-            except TypeError:
+
+            link = cur.fetchone()
+            if link is None:
                 response.status_code = status.HTTP_404_NOT_FOUND
                 return "Link not found"
 
@@ -149,6 +148,10 @@ def update(
         )
         cur = db.execute("SELECT * FROM links WHERE id = ?", (id,))
         after = cur.fetchone()
+        if after is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Link not found."
+            )
 
     resp = {
         "id": id,
@@ -174,7 +177,7 @@ def delete(id: str, api_key: str = Security(get_api_key)):
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="URL not found."
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Link not found."
             )
     return {"deleted_id": id}
 
